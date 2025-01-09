@@ -12,18 +12,18 @@ CONSTANT RM
 (* aborted.                                                                *)
 (***************************************************************************)
 VARIABLE rmState
-TypeOK == rmState \in [RM -> {"working", "prepared", "committed", "aborted"}]
+TCTypeOK == rmState \in [RM -> {"working", "prepared", "committed", "aborted"}]
 
 (***************************************************************************)
 (* Initialy all resource managers must be in working state                 *)
 (***************************************************************************)
-Init == rmState = [r \in RM |-> "working"]
+TCInit == rmState = [r \in RM |-> "working"]
 
 (***************************************************************************)
 (* A resource manager may transition to a prepared state only from working *)
 (* state                                                                   *)
 (***************************************************************************)
-Prepare(r) == rmState[r] = "working"
+TCPrepare(r) == rmState[r] = "working"
               /\ rmState' = [rmState EXCEPT ![r] = "prepared"] 
 
 (***************************************************************************)
@@ -31,10 +31,10 @@ Prepare(r) == rmState[r] = "working"
 (* state, and only if all resource managers are either prepared or         *)
 (* committed.                                                              *)
 (***************************************************************************)
-AllEitherPreparedOrCommitted == 
+TCAllEitherPreparedOrCommitted == 
             \A r \in RM : rmState[r] \in {"committed", "prepared"}
-Commit(r) == /\ rmState[r] = "prepared"
-             /\ AllEitherPreparedOrCommitted
+TCCommit(r) == /\ rmState[r] = "prepared"
+             /\ TCAllEitherPreparedOrCommitted
              /\ rmState' = [rmState EXCEPT ![r] = "committed"]
 
 (***************************************************************************)
@@ -42,29 +42,29 @@ Commit(r) == /\ rmState[r] = "prepared"
 (* or prepared states, and only until no resource manager's state is       *)
 (* committed                                                               *)
 (***************************************************************************)
-NoCommits == \A r \in RM : rmState[r] # "committed"
-Abort(r) == /\ rmState[r] \in {"working", "prepared"}
-            /\ NoCommits
+TCNoCommits == \A r \in RM : rmState[r] # "committed"
+TCAbort(r) == /\ rmState[r] \in {"working", "prepared"}
+            /\ TCNoCommits
             /\ rmState' = [rmState EXCEPT ![r] = "aborted"]             
 
 (***************************************************************************)
 (* Next step implies changing a state of at least one resource manager     *)
 (***************************************************************************)
-Next == \E r \in RM : Prepare(r) \/ Commit(r) \/ Abort(r)
+TCNext == \E r \in RM : TCPrepare(r) \/ TCCommit(r) \/ TCAbort(r)
 
 (***************************************************************************)
-(* If at any time we have two resource managers, either, one in commiter   *)
-(* and other in aborted or one in committed and other in working state,    *)
-(* combined resource managers state is not consistent                      *)
+(* If at any time we have two resource managers, either, one in commited   *)
+(* and another in aborted, or one in committed and another in working      *)
+(* state, then the combined resource managers state is not consistent      *)
 (***************************************************************************)
-NotConsistent == \A r \in RM : \A s \in RM : 
+TCNotConsistent == \A r \in RM : \A s \in RM : 
                                    \/ /\ rmState[r] = "committed" 
                                       /\ rmState[s] = "aborted"
                                    \/ /\ rmState[r] = "commited"
                                       /\ rmState[s] = "working"
-Consistent == ~NotConsistent
+TCConsistent == ~TCNotConsistent
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Dec 23 15:31:36 CET 2024 by temporaryadmin
+\* Last modified Thu Jan 09 16:45:53 CET 2025 by temporaryadmin
 \* Created Mon Dec 23 13:53:37 CET 2024 by temporaryadmin
